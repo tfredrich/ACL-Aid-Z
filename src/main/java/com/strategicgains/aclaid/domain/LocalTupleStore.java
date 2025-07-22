@@ -322,7 +322,7 @@ implements TupleStore
 	}
 
 	@Override
-	public TupleStore read(TupleSet tupleSet) {
+	public Collection<Tuple> read(TupleSet tupleSet) {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -28,26 +28,26 @@ public class SimpleTupleStore
 implements TupleStore
 {
 	/**
-	 * Index: MEMBER2GROUP containing direct relations from a User.
+	 * Index: MEMBER2GROUP containing only direct relations from a User.
 	 */
 	private Map<ObjectId, Map<String, Set<Tuple>>> memberToGroup = new ConcurrentHashMap<>();
 
 	/**
-	 * Index: GROUP2GROUP containing indirect relations from a UserSet.
+	 * Index: GROUP2GROUP containing only indirect relations from a UserSet.
 	 */
 	private Map<UserSet, Map<String, Set<Tuple>>> groupToGroup = new ConcurrentHashMap<>();
 
 	/**
-	 * Reverse Index: OBJECT2GROUP containing direct relations by objectId.
-	 * This is used to quickly find all direct tuples related to a specific objectId.
+	 * Index: containing all tuples by objectId and relation.
+	 * This is used to quickly find all tuples related to a specific objectId.
 	 */
-	private Map<ObjectId, Map<String, Set<Tuple>>> objectToGroup = new ConcurrentHashMap<>();
+	private Map<ObjectId, Map<String, Set<Tuple>>> tuplesByObjectId = new ConcurrentHashMap<>();
 
 	/**
-	 * Reverse Index: OBJECT2OBJECT containing indirect relations by objectId.
-	 * This is used to quickly find all indirect tuples related to a specific objectId.
+	 * Index: containing all tuples by userset and relation.
+	 * This is used to quickly find all tuples related to a specific userset.
 	 */
-	private Map<ObjectId, Map<String, Set<Tuple>>> objectToObject = new ConcurrentHashMap<>();
+	private Map<UserSet, Map<String, Set<Tuple>>> tuplesByUserSet = new ConcurrentHashMap<>();
 
 	/**
 	 * The collection of tuples in this set.
@@ -124,162 +124,23 @@ implements TupleStore
 	{
 		if (actor == null || relation == null || objectId == null) return false;
 
-		Set<Tuple> direct = getDirectTuples(actor);
+		Set<Tuple> direct = getDirectTuples(actor.getObjectId());
 		if (hasDirectRelation(direct, relation, objectId)) return true;
 
 		Set<Tuple> indirect = getIndirectTuples(objectId, relation);
 		return intersects(direct, indirect);
 	}
 
-	@Override
-	public TupleStore read(TupleSet tupleSet)
-	{
-		if (tupleSet.isEmpty() || !tupleSet.isValid()) throw new IllegalArgumentException("Invalid TupleSet: " + tupleSet);
-
-		Set<Tuple> tuples = new HashSet<>();
-
-		if (tupleSet.isSingleTupleKey())
-		{
-			Tuple tuple = readOne(tupleSet.getUserset(), tupleSet.getRelation(), tupleSet.getObject());
-
-			if (tuple != null)
-			{
-				tuples.add(tuple);
-			}
-		}
-		else if (tupleSet.hasObject())
-		{
-			if (tupleSet.hasRelation())
-			{
-				tuples.addAll(readAll(tupleSet.getObject(), tupleSet.getRelation()));
-			}
-			else
-			{
-				tuples.addAll(readAll(tupleSet.getObject()));
-			}
-		}
-		else if (tupleSet.hasUserset())
-		{
-			if (tupleSet.hasRelation())
-			{
-				tuples.addAll(readAll(tupleSet.getUserset(), tupleSet.getRelation()));
-			}
-			else
-			{
-				tuples.addAll(readAll(tupleSet.getUserset()));
-			}
-		}
-
-		return new SimpleTupleStore(tuples);
-	}
-
-	public Tuple readOne(String userset, String relation, String objectId)
-	throws ParseException
-	{
-		return readOne(UserSet.parse(userset), relation, new ObjectId(objectId));
-	}
-
-	public Tuple readOne(UserSet userset, String relation, ObjectId objectId)
-	{
-		if (userset == null || relation == null || objectId == null) return null;
-
-		return getDirectTuples(userset, relation, objectId).stream().findFirst().orElse(null);
-	}
-
-	public Set<Tuple> readAll(ObjectId objectId, String relation)
-	{
-		return getDirectTuples(objectId, relation);
-	}
-
-	public Set<Tuple> readAll(ObjectId objectId)
-	{
-		return getDirectTuples(objectId);
-	}
-
-	public Set<Tuple> readAll(UserSet userset, String relation)
-	{
-		return getDirectTuples(userset, relation);
-	}
-
-	public Set<Tuple> readAll(UserSet userset)
-	{
-		return getDirectTuples(userset);
-	}
-
 	/**
-	 * Answer whether the direct relations contain a relation to the given objectId.
+	 * Answer the set of tuples that have direct relations from the actor (as an object ID).
+	 * Used for the check() method and leverages the MEMBER2GROUP index.
 	 * 
-	 * @param direct   UserSets of direct relations.
-	 * @param relation The relation to check.
-	 * @param objectId The ObjectId to check.
-	 * @return true if the relation exists.
-	 */
-	private boolean hasDirectRelation(Set<Tuple> direct, String relation, ObjectId objectId)
-	{
-		return direct.stream().anyMatch(t -> t.appliesTo(objectId) && t.getRelation().equals(relation));
-	}
-
-	/**
-	 * Answer whether the two sets intersect.
-	 * 
-	 * @param direct Tuples of direct relations.
-	 * @param indirect Tuples of indirect relations.
-	 * @return true if there is an intersection.
-	 */
-	private boolean intersects(Set<Tuple> direct, Set<Tuple> indirect)
-	{
-		return direct.stream().anyMatch(d -> indirect.stream().anyMatch(i -> i.getUserset().matches(d.getObjectId(), d.getRelation())));
-	}
-
-	private Set<Tuple> getDirectTuples(UserSet userset, String relation, ObjectId objectId)
-	{
-		if (userset == null || relation == null || objectId == null) return Collections.emptySet();
-
-		Map<String, Set<Tuple>> relationSubtree = memberToGroup.get(userset.getObjectId());
-		if (relationSubtree == null) return Collections.emptySet();
-
-		Set<Tuple> relationTuples = relationSubtree.get(relation);
-		if (relationTuples == null || relationTuples.isEmpty()) return Collections.emptySet();
-
-		return relationTuples.stream()
-			.filter(t -> t.appliesTo(objectId))
-			.collect(Collectors.toSet());
-	}
-
-	private Set<Tuple> getDirectTuples(UserSet userset, String relation)
-	{
-		if (userset == null || relation == null) return Collections.emptySet();
-
-		return getDirectTuples(userset.getObjectId(), relation);
-	}
-
-	/**
-	 * Answer the set of tuples that have direct relations from the actor.
-	 * 
-	 * @param userset The UserSet acting on the objectId.
+	 * @param objectId The ID of the actor.
 	 * @return The set of tuples that have direct relations from the actor.
 	 */
-	private Set<Tuple> getDirectTuples(UserSet userset)
-	{
-		if (userset == null) return Collections.emptySet();
-
-		return getDirectTuples(userset.getObjectId());
-	}
-
-	private Set<Tuple> getDirectTuples(ObjectId objectId, String relation)
-	{
-		Map<String, Set<Tuple>> relationSubtree = objectToGroup.get(objectId);
-		if (relationSubtree == null) return Collections.emptySet();
-
-		Set<Tuple> relationTuples = relationSubtree.get(relation);
-		if (relationTuples == null || relationTuples.isEmpty()) return Collections.emptySet();
-
-		return relationTuples;
-	}
-
 	private Set<Tuple> getDirectTuples(ObjectId objectId)
 	{
-		Map<String, Set<Tuple>> relationSubtree = objectToGroup.get(objectId);
+		Map<String, Set<Tuple>> relationSubtree = memberToGroup.get(objectId);
 		if (relationSubtree == null) return Collections.emptySet();
 
 		return relationSubtree.values().stream()
@@ -307,6 +168,170 @@ implements TupleStore
 			.collect(Collectors.toSet());
 	}
 
+	@Override
+	public Collection<Tuple> read(TupleSet tupleSet)
+	{
+		if (tupleSet == null) throw new IllegalArgumentException("TupleSet cannot be null.");
+		else if (tupleSet.isEmpty() || !tupleSet.isValid()) throw new IllegalArgumentException("Invalid TupleSet: " + tupleSet);
+
+		Set<Tuple> results = new HashSet<>();
+
+		if (tupleSet.isSingleTupleKey())
+		{
+			Tuple tuple = readOne(tupleSet.getUserset(), tupleSet.getRelation(), tupleSet.getObject());
+
+			if (tuple != null)
+			{
+				results.add(tuple);
+			}
+		}
+		else if (tupleSet.hasObject())
+		{
+			if (tupleSet.hasRelation())
+			{
+				results.addAll(readAll(tupleSet.getObject(), tupleSet.getRelation()));
+			}
+			else
+			{
+				results.addAll(readAll(tupleSet.getObject()));
+			}
+		}
+		else if (tupleSet.hasUserset())
+		{
+			if (tupleSet.hasRelation())
+			{
+				results.addAll(readAll(tupleSet.getUserset(), tupleSet.getRelation()));
+			}
+			else
+			{
+				results.addAll(readAll(tupleSet.getUserset()));
+			}
+		}
+
+		return results;
+	}
+
+	public Tuple readOne(String userset, String relation, String objectId)
+	throws ParseException
+	{
+		return readOne(UserSet.parse(userset), relation, new ObjectId(objectId));
+	}
+
+	public Tuple readOne(UserSet userset, String relation, ObjectId objectId)
+	{
+		if (userset == null || relation == null || objectId == null) return null;
+
+		Map<String, Set<Tuple>> relationSubtree = memberToGroup.get(userset.getObjectId());
+		if (relationSubtree == null) return null;
+
+		Set<Tuple> relationTuples = relationSubtree.get(relation);
+		if (relationTuples == null || relationTuples.isEmpty()) return null;
+
+		return relationTuples.stream()
+			.filter(t -> t.appliesTo(objectId))
+			.collect(Collectors.toSet())
+			.stream().findFirst().orElse(null);
+	}
+
+	public Collection<Tuple> readAll(ObjectId objectId, String relation)
+	{
+		if (objectId == null || relation == null) return Collections.emptySet();
+
+		Map<String, Set<Tuple>> relationSubtree = tuplesByObjectId.get(objectId);
+		if (relationSubtree == null) return Collections.emptySet();
+
+		Set<Tuple> relationTuples = relationSubtree.get(relation);
+		if (relationTuples == null || relationTuples.isEmpty()) return Collections.emptySet();
+
+		return relationTuples;
+	}
+
+	public Collection<Tuple> readAll(ObjectId objectId)
+	{
+		if (objectId == null) return Collections.emptySet();
+
+		Map<String, Set<Tuple>> relationSubtree = tuplesByObjectId.get(objectId);
+		if (relationSubtree == null) return Collections.emptySet();
+
+		return relationSubtree.values().stream()
+			.flatMap(s -> s.stream())
+			.collect(Collectors.toSet());
+	}
+
+	public Collection<Tuple> readAll(UserSet userset, String relation)
+	{
+		if (userset == null || relation == null) return Collections.emptySet();
+
+		Map<String, Set<Tuple>> relationSubtree = tuplesByUserSet.get(userset);
+		if (relationSubtree == null) return Collections.emptySet();
+
+		Set<Tuple> relationTuples = relationSubtree.get(relation);
+		if (relationTuples == null || relationTuples.isEmpty()) return Collections.emptySet();
+
+		return relationTuples;
+	}
+
+	public Collection<Tuple> readAll(UserSet userset)
+	{
+		if (userset == null) return Collections.emptySet();
+
+		Map<String, Set<Tuple>> relationSubtree = tuplesByUserSet.get(userset);
+		if (relationSubtree == null) return Collections.emptySet();
+
+		return relationSubtree.values().stream()
+			.flatMap(s -> s.stream())
+			.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Answer whether the direct relations contain a relation to the given objectId.
+	 * 
+	 * @param direct   UserSets of direct relations.
+	 * @param relation The relation to check.
+	 * @param objectId The ObjectId to check.
+	 * @return true if the relation exists.
+	 */
+	private boolean hasDirectRelation(Set<Tuple> direct, String relation, ObjectId objectId)
+	{
+		return direct.stream().anyMatch(t -> t.appliesTo(objectId) && t.getRelation().equals(relation));
+	}
+
+	/**
+	 * Answer whether the two sets intersect.
+	 * 
+	 * @param direct Tuples of direct relations.
+	 * @param indirect Tuples of indirect relations.
+	 * @return true if there is an intersection.
+	 */
+	private boolean intersects(Set<Tuple> direct, Set<Tuple> indirect)
+	{
+		return direct.stream().anyMatch(d -> indirect.stream().anyMatch(i -> i.getUserset().matches(d.getObjectId(), d.getRelation())));
+	}
+
+//	private Set<Tuple> getDirectTuples(UserSet userset, String relation)
+//	{
+//		if (userset == null || relation == null) return Collections.emptySet();
+//
+//		return getDirectTuples(userset.getObjectId(), relation);
+//	}
+
+//	/**
+//	 * Answer the set of tuples that have direct relations from the actor.
+//	 * 
+//	 * @param userset The UserSet acting on the objectId.
+//	 * @return The set of tuples that have direct relations from the actor.
+//	 */
+//	private Set<Tuple> getDirectTuples(UserSet userset)
+//	{
+//		if (userset == null) return Collections.emptySet();
+//
+//		return getDirectTuples(userset.getObjectId());
+//	}
+
+//	private Set<Tuple> getDirectTuples(ObjectId objectId, String relation)
+//	{
+//	}
+
 	public SimpleTupleStore add(String userset, String relation, String resource)
 	throws ParseException, InvalidTupleException
 	{
@@ -324,8 +349,8 @@ implements TupleStore
 		tuples.add(tuple);
 		addMemberToGroup(tuple);
 		addGroupToGroup(tuple);
-		addObjectToGroup(tuple);
-		addObjectToObject(tuple);
+		addTupleByObjectId(tuple);
+		addTupleByUserSet(tuple);
 		return this;
 	}
 
@@ -334,8 +359,8 @@ implements TupleStore
 		tuples.remove(tuple);
 		removeMemberToGroup(tuple);
 		removeGroupToGroup(tuple);
-		removeObjectToGroup(tuple);
-		removeObjectToObject(tuple);
+		removeTupleByObjectId(tuple);
+		removeTupleByUserSet(tuple);
 		return this;
 	}
 
@@ -362,20 +387,16 @@ implements TupleStore
 		usersets.add(tuple);
 	}
 
-	private void addObjectToGroup(Tuple tuple)
+	private void addTupleByObjectId(Tuple tuple)
 	{
-		if (!tuple.isDirectRelation()) return;
-
-		Map<String, Set<Tuple>> relationSubtree = objectToGroup.computeIfAbsent(tuple.getObjectId(), t -> new ConcurrentHashMap<>());
+		Map<String, Set<Tuple>> relationSubtree = tuplesByObjectId.computeIfAbsent(tuple.getObjectId(), t -> new ConcurrentHashMap<>());
 		Set<Tuple> resources = relationSubtree.computeIfAbsent(tuple.getRelation(), s -> new HashSet<>());
 		resources.add(tuple);
 	}
 
-	private void addObjectToObject(Tuple tuple)
+	private void addTupleByUserSet(Tuple tuple)
 	{
-		if (tuple.isDirectRelation()) return;
-
-		Map<String, Set<Tuple>> relationSubtree = objectToObject.computeIfAbsent(tuple.getObjectId(), t -> new HashMap<>());
+		Map<String, Set<Tuple>> relationSubtree = tuplesByUserSet.computeIfAbsent(tuple.getUserset(), t -> new HashMap<>());
 		Set<Tuple> usersets = relationSubtree.computeIfAbsent(tuple.getRelation(), s -> new HashSet<>());
 		usersets.add(tuple);
 	}
@@ -418,9 +439,9 @@ implements TupleStore
 		}
 	}
 
-	private void removeObjectToGroup(Tuple tuple)
+	private void removeTupleByObjectId(Tuple tuple)
 	{
-		Map<String, Set<Tuple>> relationSubtree = objectToGroup.get(tuple.getObjectId());
+		Map<String, Set<Tuple>> relationSubtree = tuplesByObjectId.get(tuple.getObjectId());
 
 		if (relationSubtree == null) return;
 
@@ -437,9 +458,9 @@ implements TupleStore
 		}
 	}
 
-	private void removeObjectToObject(Tuple tuple)
+	private void removeTupleByUserSet(Tuple tuple)
 	{
-		Map<String, Set<Tuple>> relationSubtree = objectToObject.get(tuple.getObjectId());
+		Map<String, Set<Tuple>> relationSubtree = tuplesByUserSet.get(tuple.getUserset());
 
 		if (relationSubtree == null) return;
 

@@ -1,5 +1,7 @@
 package com.strategicgains.aclaid.domain;
 
+import java.util.Collection;
+
 import com.strategicgains.aclaid.exception.InvalidTupleException;
 
 /**
@@ -33,7 +35,7 @@ public interface TupleStore
 	 * @param tupleSet A tuple set that defines the criteria for the read operation.
 	 * @return a collection of tuples that match the criteria defined in the tuple set.
 	 */
-	TupleStore read(TupleSet tupleSet);
+	Collection<Tuple> read(TupleSet tupleSet);
 
 	/**
 	 * Add a tuple to this tuple set.

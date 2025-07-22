@@ -3,9 +3,10 @@ package com.strategicgains.aclaid.domain;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.text.ParseException;
-import java.util.Set;
+import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -62,11 +63,12 @@ public class SimpleTupleStoreTest
 	}
 
 	@Test
-	public void testReadOneKimViewerOfRoadmap()
+	public void testReadOneDoesNotFollowIndirect()
 	throws ParseException
 	{
-		Tuple tuple = ts.readOne(KIM, VIEWER_RELATION, DOC_ROADMAP);
-		assertNull(tuple);
+		assertNull(ts.readOne(KIM, VIEWER_RELATION, DOC_ROADMAP));
+		assertNull(ts.readOne(CARL, VIEWER_RELATION, DOC_SLIDES));
+		assertNull(ts.readOne(DANA, EDITOR_RELATION, FOLDER_ENGINEERING));
 	}
 
 	@Test
@@ -95,21 +97,27 @@ public class SimpleTupleStoreTest
 	public void testReadEditorsForRoadmap()
 	throws ParseException
 	{
-		Set<Tuple> tuples = ts.readAll(new ObjectId(DOC_ROADMAP), EDITOR_RELATION);
+		Collection<Tuple> tuples = ts.readAll(new ObjectId(DOC_ROADMAP), EDITOR_RELATION);
 		assertNotNull(tuples);
 		assertEquals(2, tuples.size());
-//		assertTrue(tuples.contains(UserSet.parse(KIM)));
-//		assertTrue(tuples.contains(UserSet.parse(BEN)));
+		tuples.forEach(tuple -> {
+			assertEquals(DOC_ROADMAP, tuple.getObjectId().toString());
+			assertEquals(EDITOR_RELATION, tuple.getRelation());
+			assertTrue(tuple.getUserset().toString().equals(KIM) || tuple.getUserset().toString().equals(BEN));
+		});
 	}
 
 	@Test
 	public void testReadViewersSlides()
 	throws ParseException
 	{
-		Set<Tuple> tuples = ts.readAll(new ObjectId(DOC_SLIDES), VIEWER_RELATION);
+		Collection<Tuple> tuples = ts.readAll(new ObjectId(DOC_SLIDES), VIEWER_RELATION);
 		assertNotNull(tuples);
 		assertEquals(1, tuples.size());
-//		assertTrue(tuples.contains(UserSet.parse(CONTOSO_MEMBER)));
+		Tuple tuple = tuples.iterator().next();
+		assertEquals(new ObjectId(DOC_SLIDES), tuple.getObjectId());
+		assertEquals(VIEWER_RELATION, tuple.getRelation());
+		assertEquals(UserSet.parse(CONTOSO_MEMBER), tuple.getUserset());
 	}
 
 //	@Test
@@ -123,28 +131,6 @@ public class SimpleTupleStoreTest
 //		assertTrue(usersets.contains(UserSet.parse(DANA)));
 //		assertTrue(usersets.contains(UserSet.parse(CONTOSO_MEMBER)));
 //	}
-
-	@Test
-	public void testReadOneCarlViewerOfSlides()
-	throws ParseException
-	{
-		Tuple tuple = ts.readOne(CARL, VIEWER_RELATION, DOC_SLIDES);
-		assertNotNull(tuple);
-		assertEquals(DOC_SLIDES, tuple.getObjectId().toString());
-		assertEquals(VIEWER_RELATION, tuple.getRelation());
-		assertEquals(CARL, tuple.getUserset().toString());
-	}
-
-	@Test
-	public void testReadOneDanaEditorOfEngineeringFolder()
-	throws ParseException
-	{
-		Tuple tuple = ts.readOne(DANA, EDITOR_RELATION, FOLDER_ENGINEERING);
-		assertNotNull(tuple);
-		assertEquals(FOLDER_ENGINEERING, tuple.getObjectId().toString());
-		assertEquals(EDITOR_RELATION, tuple.getRelation());
-		assertEquals(DANA, tuple.getUserset().toString());
-	}
 
 //	@Test
 //	public void testExpandDocReadmeParent()
