@@ -5,6 +5,9 @@ import com.strategicgains.aclaid.domain.UserSet;
 
 /**
  * Userset rewrite rules are also translated to boolean expressions as part of check evaluation.
+ * 
+ * Rewrite rules, when rewritten given an object ID, they produce a userset expression tree. Which
+ * in turn can be evaluated against the relation tuples for the user being authorized. 
  */
 public interface UsersetExpression
 {
@@ -13,8 +16,7 @@ public interface UsersetExpression
 	 *
 	 * @param tuples The tuple set to evaluate against.
 	 * @param userset The user to evaluate against the tuples.
-	 * @return true if the expression evaluates to true for the given tuple set,
-	 *         false otherwise.
+	 * @return true if the expression evaluates to true for the given tuple set, false otherwise.
 	 */
 	boolean evaluate(TupleStore tuples, UserSet userset);
 }
