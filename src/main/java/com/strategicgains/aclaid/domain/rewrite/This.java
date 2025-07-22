@@ -25,4 +25,9 @@ implements RewriteRuleLeaf
 	{
 		return new ThisExpression(objectId, relation.getName());
 	}
+
+	public static UsersetExpression rewrite(RelationDefinition relation, ObjectId objectId)
+	{
+		return new ThisExpression(objectId, relation.getName());
+	}
 }

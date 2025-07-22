@@ -77,6 +77,6 @@ public class RelationDefinition
 			return rewriteRules.rewrite(objectId);
 		}
 
-		return new This(this).rewrite(objectId);
+		return This.rewrite(this, objectId);
 	}
 }
