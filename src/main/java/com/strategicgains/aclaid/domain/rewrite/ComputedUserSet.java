@@ -3,8 +3,6 @@ package com.strategicgains.aclaid.domain.rewrite;
 import com.strategicgains.aclaid.domain.ObjectId;
 import com.strategicgains.aclaid.domain.RelationDefinition;
 import com.strategicgains.aclaid.domain.rewrite.expression.ComputedUserSetExpression;
-import com.strategicgains.aclaid.domain.rewrite.expression.ThisExpression;
-import com.strategicgains.aclaid.domain.rewrite.expression.UnionPredicate;
 import com.strategicgains.aclaid.domain.rewrite.expression.UsersetExpression;
 
 /**
@@ -76,12 +74,9 @@ implements RewriteRuleLeaf
 	{
 		if (hasObjectToken() && getObjectToken().startsWith("$"))
 		{
-			System.out.println(hasObjectToken() + " " + getObjectToken() + " " + relation.getName());
 			return new ComputedUserSetExpression(objectId, relation.getName(), getObjectToken());
 		}
-		
-		return new UnionPredicate()
-			.addChild(new ThisExpression(objectId, relation.getName()))
-			.addChild(relation.rewrite(objectId));
+
+		return relation.rewrite(objectId);
 	}
 }

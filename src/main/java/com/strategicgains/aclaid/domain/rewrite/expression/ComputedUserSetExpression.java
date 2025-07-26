@@ -1,5 +1,9 @@
 package com.strategicgains.aclaid.domain.rewrite.expression;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import com.strategicgains.aclaid.domain.ObjectId;
 import com.strategicgains.aclaid.domain.Tuple;
 import com.strategicgains.aclaid.domain.TupleStore;
@@ -15,7 +19,7 @@ import com.strategicgains.aclaid.domain.rewrite.RewriteRule;
  * @see RewriteRule
  */
 public class ComputedUserSetExpression
-implements UsersetLeafExpression
+implements UsersetExpression
 {
 	private ObjectId objectId;
 	private String relation;
@@ -27,6 +31,16 @@ implements UsersetLeafExpression
 		setObjectId(objectId);
 		setRelation(relation);
 		setObjectToken(objectToken);
+	}
+
+	public ObjectId getObjectId()
+	{
+		return objectId;
+	}
+
+	protected void setObjectId(ObjectId objectId)
+	{
+		this.objectId = objectId;
 	}
 
 	protected String getObjectToken()
@@ -54,21 +68,13 @@ implements UsersetLeafExpression
 		this.relation = relation;
 	}
 
-	protected void setObjectId(ObjectId objectId)
-	{
-		this.objectId = objectId;
-	}
-
 	@Override
 	public boolean evaluate(TupleStore tuples, UserSet userset)
 	{
-//		TupleStore filtered = tuples.readAll(relation, objectId);
-//		UserSet computed = compute(filtered, objectId, relation);
-//		return tuples.expandUserSets(userset.getRelation(), userset.getObjectId());
-		return false;
+		return tuples.check(userset, userset.getRelation(), objectId);
 	}
 
-	private UserSet compute(TupleStore tuples, ObjectId objectId, String relation)
+	private UserSet compute(Tuple tuple, ObjectId objectId, String relation)
 	{
 		UserSet userset = new UserSet(objectId, relation);
 		
@@ -77,14 +83,16 @@ implements UsersetLeafExpression
 			switch(getObjectToken())
 			{
 				case Tuple.USERSET_OBJECT:
-					System.out.println(Tuple.USERSET_OBJECT + " of " + userset + " / " + objectId);
-//					tuples.stream().findFirst().ifPresent(t -> userset.setObjectId(t.getUsersetResource()));
+					System.out.println(Tuple.USERSET_OBJECT + " of " + tuple.getUsersetObjectId() + " / " + relation);
+					userset.setObjectId(tuple.getUsersetObjectId());
 					break;
 				case Tuple.USERSET_RELATION:
 					System.out.println(Tuple.USERSET_RELATION + " of " + userset);
+					userset.setRelation(tuple.getUsersetRelation());
 					break;
 				case Tuple.RELATION:
 					System.out.println(Tuple.RELATION + " of " + userset);
+					userset.setRelation(tuple.getRelation());
 					break;
 				default:
 					System.out.println(getObjectToken() + " of " + userset);
@@ -92,5 +100,35 @@ implements UsersetLeafExpression
 		}
 
 		return userset;
+	}
+
+	public List<UserSet> compute(Collection<Tuple> filtered, UserSet userset)
+	{
+		if (filtered == null || filtered.isEmpty())
+		{
+			return Collections.emptyList();
+		}
+
+		return filtered.stream()
+			.map(tuple -> compute(tuple, userset.getObjectId(), userset.getRelation()))
+			.toList();
+	}
+
+	public boolean evaluateAll(TupleStore tuples, List<UserSet> computed, UserSet userset)
+	{
+		if (computed == null || computed.isEmpty())
+		{
+			return false;
+		}
+
+		for (UserSet c : computed)
+		{
+			if (evaluate(tuples, c))
+			{
+				return true;
+			}
+		}
+
+		return false; 
 	}
 }

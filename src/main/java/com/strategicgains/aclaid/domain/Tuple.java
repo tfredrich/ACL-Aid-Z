@@ -284,7 +284,7 @@ public class Tuple
 		return (hasUserset() ? getUserset().getRelation() : null);
 	}
 
-	public ObjectId getUsersetResource()
+	public ObjectId getUsersetObjectId()
 	{
 		return (hasUserset() ? getUserset().getObjectId() : null);
 	}

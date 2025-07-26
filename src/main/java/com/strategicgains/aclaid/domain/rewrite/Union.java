@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.strategicgains.aclaid.domain.ObjectId;
-import com.strategicgains.aclaid.domain.rewrite.expression.UnionPredicate;
+import com.strategicgains.aclaid.domain.rewrite.expression.UnionExpression;
 import com.strategicgains.aclaid.domain.rewrite.expression.UsersetExpression;
 
 /**
@@ -63,6 +63,6 @@ implements RewriteRule
 	@Override
 	public UsersetExpression rewrite(ObjectId objectId)
 	{
-		return new UnionPredicate(children().map(child -> child.rewrite(objectId)).toList());
+		return new UnionExpression(children().map(child -> child.rewrite(objectId)).toList());
 	}
 }

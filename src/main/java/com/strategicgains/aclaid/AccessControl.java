@@ -46,7 +46,7 @@ public class AccessControl
 		if (!containsRelation(relation)) throw new InvalidTupleException("Relation not registered: " + relation);
 		if (!objectsByName.containsKey(objectId.getType())) throw new InvalidTupleException("Object not defined: " + objectId.getType());
 
-		tuples.add(userset, relation, objectId);
+		tuples.write(userset, relation, objectId);
 		return this;
 	}
 

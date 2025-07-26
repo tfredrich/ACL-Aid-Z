@@ -9,10 +9,10 @@ import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.strategicgains.aclaid.domain.LocalTupleStore;
 import com.strategicgains.aclaid.domain.ObjectDefinition;
 import com.strategicgains.aclaid.domain.ObjectId;
 import com.strategicgains.aclaid.domain.RelationDefinition;
+import com.strategicgains.aclaid.domain.SimpleTupleStore;
 import com.strategicgains.aclaid.domain.Tuple;
 import com.strategicgains.aclaid.domain.UserSet;
 import com.strategicgains.aclaid.domain.rewrite.ComputedUserSet;
@@ -70,23 +70,23 @@ public class RewriteRuleTest
 	private static final String FOLDER_PLANNING = NAMESPACE + FOLDER_OBJECT + "/planning";
 	private static final String FOLDER_ENGINEERING = NAMESPACE + FOLDER_OBJECT + "/engineering";
 
-	private LocalTupleStore tuples;
+	private SimpleTupleStore tuples;
 
 	@Before
 	public void initialize()
 	throws ParseException, InvalidTupleException
 	{
-		tuples = new LocalTupleStore();		
+		tuples = new SimpleTupleStore();		
 		tuples
-			.add(KIM, OWNER_TEXT, DOC_ROADMAP)
-			.add(BEN, EDITOR_TEXT, DOC_ROADMAP)
-			.add(CARL, VIEWER_TEXT, DOC_SLIDES)
+			.write(KIM, OWNER_TEXT, DOC_ROADMAP)
+			.write(BEN, EDITOR_TEXT, DOC_ROADMAP)
+			.write(CARL, VIEWER_TEXT, DOC_SLIDES)
 
-			.add(CARL, MEMBER_TEXT, CONTOSO)
-			.add(CONTOSO + "#" + MEMBER_TEXT, VIEWER_TEXT, FOLDER_PLANNING)
+			.write(CARL, MEMBER_TEXT, CONTOSO)
+			.write(CONTOSO + "#" + MEMBER_TEXT, VIEWER_TEXT, FOLDER_PLANNING)
 			
-			.add(FOLDER_PLANNING, PARENT_TEXT, FOLDER_ENGINEERING)
-			.add(FOLDER_ENGINEERING, PARENT_TEXT, DOC_ROADMAP);
+			.write(FOLDER_PLANNING, PARENT_TEXT, FOLDER_ENGINEERING)
+			.write(FOLDER_ENGINEERING, PARENT_TEXT, DOC_ROADMAP);
 ;
 	}
 
@@ -103,8 +103,8 @@ public class RewriteRuleTest
 	public void testThis()
 	throws ParseException, InvalidTupleException
     {
-        LocalTupleStore local = new LocalTupleStore(tuples);
-        local.add(KIM, VIEWER_TEXT, DOC_ROADMAP);
+        SimpleTupleStore local = new SimpleTupleStore(tuples);
+        local.write(KIM, VIEWER_TEXT, DOC_ROADMAP);
         RewriteRule rule = new This(VIEWER);
         UsersetExpression rewrite = rule.rewrite(new ObjectId(DOC_ROADMAP));
         assertTrue(rewrite.evaluate(local, UserSet.parse(KIM)));
@@ -133,8 +133,8 @@ public class RewriteRuleTest
 			new ComputedUserSet(VIEWER)
 				.withToken(Tuple.USERSET_OBJECT));
 		UsersetExpression rewrite = rule.rewrite(new ObjectId(DOC_ROADMAP));
-		assertTrue(rewrite.evaluate(tuples, UserSet.parse(FOLDER_ENGINEERING + "#" + VIEWER)));
-		assertTrue(rewrite.evaluate(tuples, UserSet.parse(FOLDER_PLANNING + "#" + VIEWER)));
+		assertTrue(rewrite.evaluate(tuples, UserSet.parse(BEN)));
+		assertTrue(rewrite.evaluate(tuples, UserSet.parse(KIM)));
 	}
 
 	@Test

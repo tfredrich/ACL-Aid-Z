@@ -56,14 +56,14 @@ public class CartaExampleTest {
 	@Test
 	public void test() throws ParseException, InvalidTupleException {
 		SimpleTupleStore tuples = new SimpleTupleStore()
-			.add(EMP_1, TEACHER_RELATION, CLASS_A)
-			.add(EMP_2, TEACHER_RELATION, CLASS_B)
-			.add(CLASS_A + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_X)
-			.add(CLASS_A + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_Y)
-			.add(CLASS_B + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_S)
-			.add(CLASS_B + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_T)
-			.add(GRADE_X + "#" + EDIT_RELATION, VIEW_RELATION, GRADE_X)
-			.add(GRADE_Y + "#" + EDIT_RELATION, VIEW_RELATION, GRADE_Y);
+			.write(EMP_1, TEACHER_RELATION, CLASS_A)
+			.write(EMP_2, TEACHER_RELATION, CLASS_B)
+			.write(CLASS_A + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_X)
+			.write(CLASS_A + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_Y)
+			.write(CLASS_B + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_S)
+			.write(CLASS_B + "#" + TEACHER_RELATION, EDIT_RELATION, GRADE_T)
+			.write(GRADE_X + "#" + EDIT_RELATION, VIEW_RELATION, GRADE_X)
+			.write(GRADE_Y + "#" + EDIT_RELATION, VIEW_RELATION, GRADE_Y);
 
 		assertTrue(tuples.check(EMP_1, TEACHER_RELATION, CLASS_A));
 		assertFalse(tuples.check(EMP_1, TEACHER_RELATION, CLASS_B));

@@ -1,7 +1,7 @@
 package com.strategicgains.aclaid.domain.rewrite;
 
 import com.strategicgains.aclaid.domain.ObjectId;
-import com.strategicgains.aclaid.domain.rewrite.expression.TupleToUserSetPredicate;
+import com.strategicgains.aclaid.domain.rewrite.expression.TupleToUserSetExpression;
 import com.strategicgains.aclaid.domain.rewrite.expression.UsersetExpression;
 
 /**
@@ -28,6 +28,6 @@ implements RewriteRuleLeaf
 	@Override
 	public UsersetExpression rewrite(ObjectId objectId)
 	{
-		return new TupleToUserSetPredicate(objectId, relation, computedUserSet.rewrite(objectId));
+		return new TupleToUserSetExpression(objectId, relation, computedUserSet.rewrite(objectId));
 	}
 }

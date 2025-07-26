@@ -12,7 +12,7 @@ import com.strategicgains.aclaid.domain.UserSet;
  * The returned set contains all elements that are members of either the first or second input set.
  * Duplicate elements that are in both sets will only appear once in the union.
  * The union of A and B is equal to the union of B and A. So union is commutative.
- * UnionPredicate is associative - (A.union(B)).union(C) equals A.union(B.union(C))
+ * UnionExpression is associative - (A.union(B)).union(C) equals A.union(B.union(C))
  * The union of a set with an empty set returns the original set.
  * 
  * For example:
@@ -22,23 +22,23 @@ import com.strategicgains.aclaid.domain.UserSet;
  * A.union(B) would return:
  * {1, 2, 3, 4, 5, 6}
  */
-public class UnionPredicate
+public class UnionExpression
 implements UsersetExpression
 {
 	private List<UsersetExpression> children = new ArrayList<>();
 
-	public UnionPredicate()
+	public UnionExpression()
 	{
 		super();
 	}
 
-	public UnionPredicate(List<UsersetExpression> children)
+	public UnionExpression(List<UsersetExpression> children)
 	{
 		this();
 		setChildren(children);
 	}
 
-	public UnionPredicate addChild(UsersetExpression child)
+	public UnionExpression addChild(UsersetExpression child)
 	{
 		this.children.add(child);
 		return this;

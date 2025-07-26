@@ -29,7 +29,7 @@ public interface TupleStore
 	boolean check(UserSet userset, String relation, ObjectId objectId);
 
 	/**
-	 * Perform a read operation against the tuple store using the provided tuple set.
+	 * Perform a single read operation against the tuple store using the provided tuple set.
 	 * This is used to retrieve tuples that match the criteria specified in the tuple set.
 	 * 
 	 * @param tupleSet A tuple set that defines the criteria for the read operation.
@@ -38,12 +38,29 @@ public interface TupleStore
 	Collection<Tuple> read(TupleSet tupleSet);
 
 	/**
+	 * Perform one or more read operations against the tuple store using the provided tuple sets.
+	 * This is used to retrieve tuples that match the criteria specified in the tuple sets.
+	 * 
+	 * @param tupleSets A collection of one or more tuple sets that define the criteria for the read operation(s).
+	 * @return a collection of tuples that match the criteria defined in the tuple sets.
+	 */
+	Collection<Tuple> read(Collection<TupleSet> tupleSets);
+
+	/**
 	 * Add a tuple to this tuple set.
 	 * 
 	 * @param tuple
 	 * @return
 	 */
-	TupleStore add(Tuple tuple);
+	TupleStore write(Tuple tuple);
+
+	/**
+	 * Add a collection of tuples to this tuple set.
+	 * 
+	 * @param tuples a collection of tuples to be added to the tuple store.
+	 * @return
+	 */
+	TupleStore write(Collection<Tuple> tuples);
 
 	/**
 	 * Create a new tuple using the given object ID, relation and userset then add it to the tuple set.
@@ -54,7 +71,7 @@ public interface TupleStore
 	 * @return
 	 * @throws InvalidTupleException 
 	 */
-	TupleStore add(UserSet userset, String relation, ObjectId objectId)
+	TupleStore write(UserSet userset, String relation, ObjectId objectId)
 	throws InvalidTupleException;
 
 	/**
