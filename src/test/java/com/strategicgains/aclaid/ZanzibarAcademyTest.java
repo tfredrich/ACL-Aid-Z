@@ -361,7 +361,9 @@ public class ZanzibarAcademyTest
 
 		assertTrue(acl.check(DANA, MEMBER, CONTOSO));
 		assertTrue(acl.check(DANA, EDITOR, FOLDER_ENGINEERING));
+		assertTrue(acl.check(DANA, VIEWER, FOLDER_ENGINEERING));
 		assertTrue(acl.check(DANA, EDITOR, FOLDER_PLANNING));
+		assertTrue(acl.check(DANA, VIEWER, FOLDER_PLANNING));
 		assertTrue(acl.check(DANA, EDITOR, DOC_README));
 		assertTrue(acl.check(DANA, VIEWER, DOC_README));
 	}

@@ -71,7 +71,7 @@ implements UsersetExpression
 	@Override
 	public boolean evaluate(TupleStore tuples, UserSet userset)
 	{
-		return tuples.check(userset, userset.getRelation(), objectId);
+		return false;
 	}
 
 	private UserSet compute(Tuple tuple, ObjectId objectId, String relation)
@@ -83,7 +83,6 @@ implements UsersetExpression
 			switch(getObjectToken())
 			{
 				case Tuple.USERSET_OBJECT:
-					System.out.println(Tuple.USERSET_OBJECT + " of " + tuple.getUsersetObjectId() + " / " + relation);
 					userset.setObjectId(tuple.getUsersetObjectId());
 					break;
 				case Tuple.USERSET_RELATION:
@@ -123,8 +122,9 @@ implements UsersetExpression
 
 		for (UserSet c : computed)
 		{
-			if (evaluate(tuples, c))
-			{
+			System.out.println("Checking " + userset + " for " + relation + " on " + c.getObjectId());
+			if (tuples.check(userset, relation, c.getObjectId()) 
+)			{
 				return true;
 			}
 		}

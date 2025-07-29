@@ -41,11 +41,8 @@ implements UsersetLeafExpression
 
 		if (filtered == null || filtered.isEmpty())
 		{
-			System.out.println("No tuples found for " + relation + " / " + objectId);
 			return false;
 		}
-
-		System.out.println("Found " + filtered.size() + " tuples for " + relation + " / " + objectId);
 
 		List<UserSet> computed = userSetExpression.compute(filtered, userset);		
 		return userSetExpression.evaluateAll(tuples, computed, userset);
