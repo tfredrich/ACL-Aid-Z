@@ -120,6 +120,11 @@ public class UserSet
 		return objectId;
 	}
 
+	public boolean isWildcard()
+	{
+		return (hasObjectId() && objectId.isWildcard());
+	}
+
 	@Override
 	public String toString()
 	{

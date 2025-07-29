@@ -56,6 +56,7 @@ implements TupleStore
 
 	public SimpleTupleStore()
 	{
+		super();
 	}
 
 	public SimpleTupleStore(ObjectId objectId, String relation, Set<UserSet> usersets)
@@ -83,14 +84,17 @@ implements TupleStore
 	}
 
 	public SimpleTupleStore(SimpleTupleStore that)
+	throws InvalidTupleException
 	{
 		this(that.tuples);
 	}
 
 	public SimpleTupleStore(Collection<Tuple> tuples)
+	throws InvalidTupleException
 	{
 		this();
-		tuples.stream().forEach(this::write);
+		if (tuples == null || tuples.isEmpty()) return;
+		write(tuples);
 	}
 
 	/**
@@ -302,7 +306,17 @@ implements TupleStore
 	 */
 	@Override
 	public SimpleTupleStore write(Tuple tuple)
+	throws InvalidTupleException
 	{
+		if (tuple == null)
+		{
+			throw new InvalidTupleException("Tuple cannot be null.");
+		}
+		else if (!tuple.isValid())
+		{
+			throw new InvalidTupleException("Invalid tuple: " + tuple);
+		}
+
 		tuples.add(tuple);
 		addMemberToGroup(tuple);
 		addGroupToGroup(tuple);
@@ -319,10 +333,29 @@ implements TupleStore
 	 */
 	@Override
 	public SimpleTupleStore write(Collection<Tuple> tuples)
+	throws InvalidTupleException
 	{
 		if (tuples == null || tuples.isEmpty()) return this;
 
-		tuples.stream().forEach(this::write);
+		try
+		{
+			tuples.stream().forEach(t -> {
+				try
+				{
+					write(t);
+				}
+				catch (InvalidTupleException e)
+				{
+					throw new LocalInvalidTupleException("Invalid tuple in SimpleTupleStore constructor: " + t, e);
+				}
+			});
+		}
+		catch (LocalInvalidTupleException e)
+		{
+			// Rethrow the original exception.
+			throw (InvalidTupleException) e.getCause();
+		}
+
 		return this;
 	}
 
@@ -527,5 +560,15 @@ implements TupleStore
 	private boolean intersects(Set<Tuple> direct, Set<Tuple> indirect)
 	{
 		return direct.stream().anyMatch(d -> indirect.stream().anyMatch(i -> i.getUserset().matches(d.getObjectId(), d.getRelation())));
+	}
+
+	private class LocalInvalidTupleException
+	extends RuntimeException
+	{
+		private static final long serialVersionUID = 1626686686288754534L;
+
+		public LocalInvalidTupleException(String message, Throwable cause) {
+			super(message, cause);
+		}
 	}
 }

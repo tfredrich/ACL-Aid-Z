@@ -241,6 +241,11 @@ public class Tuple
 		return hasObjectId() && hasUserset() && hasRelation();
 	}
 
+	public boolean containsWildcard()
+	{
+		return (userset.isWildcard() || objectId.isWildcard());
+	}
+
 	/*
 	 * Parses an ACL-AID Tuple of the form:
 	 * User[#relation]@relation#resource

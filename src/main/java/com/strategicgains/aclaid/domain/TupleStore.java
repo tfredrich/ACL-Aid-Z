@@ -52,7 +52,8 @@ public interface TupleStore
 	 * @param tuple
 	 * @return
 	 */
-	TupleStore write(Tuple tuple);
+	TupleStore write(Tuple tuple)
+	throws InvalidTupleException;
 
 	/**
 	 * Add a collection of tuples to this tuple set.
@@ -60,7 +61,8 @@ public interface TupleStore
 	 * @param tuples a collection of tuples to be added to the tuple store.
 	 * @return
 	 */
-	TupleStore write(Collection<Tuple> tuples);
+	TupleStore write(Collection<Tuple> tuples)
+	throws InvalidTupleException;
 
 	/**
 	 * Create a new tuple using the given object ID, relation and userset then add it to the tuple set.
