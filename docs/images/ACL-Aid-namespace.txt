@@ -33,9 +33,11 @@ class SimpleTupleStore {
  -tuples : Collection<Tuple>
 }
 interface TupleStore {
-  +add(tuple : Tuple): TupleStore
-  +read(filter : TupleSet): TupleStore
+  +check(userset: UserSet, relation: String, objectId: ObjectId): boolean
+  +read(filter : TupleSet): Collection<Tuple>
+  +readOne(userset: UserSet, relation: String, objectId: ObjectId): Tuple
   +remove(tuple : Tuple): TupleStore
+  +write(tuple : Tuple): TupleStore
 }
 class TupleToUserSet {
   -userset : ComputedUserSet
@@ -47,6 +49,27 @@ enum Tuple {
   $TUPLE_RELATION
 }
 
+interface UserSetExpression {
+  +evaluate(tuples: TupleStore, userset: UserSet): boolean
+}
+class ComputedUserSetExpression {
+}
+class ThisExpression {
+}
+class TupleToUserSetExpression {
+}
+class UnionExpression {
+  -children: List<UserSetExpression>
+}
+abstract BinaryUserSetExpression {
+  -lValue: UserSetExpression
+  -rValue: UserSetExpression
+}
+class IntersectionExpression {
+}
+class ExclusionExpression {
+}
+
 AccessControl --> TupleStore
 AccessControl "1" *-->  "*" ObjectDefinition
 
@@ -56,20 +79,33 @@ RewriteRule <|.. Union
 
 BinaryRewriteRule <|-- Intersection
 BinaryRewriteRule <|-- Exclusion
-BinaryRewriteRule --> RewriteRule : lRule
-BinaryRewriteRule --> RewriteRule : rRule
+BinaryRewriteRule --> RewriteRule: lRule
+BinaryRewriteRule --> RewriteRule: rRule
 
 RewriteRuleLeaf <|.. This
 RewriteRuleLeaf <|.. ComputedUserSet
 RewriteRuleLeaf <|.. TupleToUserSet
 
 ObjectDefinition "1" *-- "*" RelationDefinition : contains
-RelationDefinition "0" --> "1" RewriteRule : has
+ObjectDefinition --> UserSetExpression: produces
+RelationDefinition "0" --> "1" RewriteRule: has
 Union "1" --> "*" RewriteRuleLeaf
+
+UserSetExpression <|.. UnionExpression
+UserSetExpression <|.. ThisExpression
+UserSetExpression <|.. TupleToUserSetExpression
+UserSetExpression <|.. ComputedUserSetExpression
+UserSetExpression <|.. BinaryUserSetExpression
+BinaryUserSetExpression <|-- IntersectionExpression
+BinaryUserSetExpression <|-- ExclusionExpression
+TupleToUserSetExpression --> "1" ComputedUserSetExpression
+UnionExpression --> "*" UserSetExpression
+BinaryUserSetExpression --> UserSetExpression: lValue
+BinaryUserSetExpression --> UserSetExpression: rValue
 
 TupleStore <|.. SimpleTupleStore
 
 TupleToUserSet --> ComputedUserSet
 TupleToUserSet --> Tuple
-ComputedUserSet --> RelationDefinition
+ComputedUserSet --> RelationDefinition: relation
 @enduml
